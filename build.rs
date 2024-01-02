@@ -28,6 +28,8 @@ fn main() {
         .header("wrapper.h") // The input header
         .use_core() // Use core:: instead of std::
         .derive_debug(false) // Don't derive Debug for generated types
+        .prepend_enum_name(false)
+        .default_enum_style(bindgen::EnumVariation::Rust { non_exhaustive: false })
         
         // Tell cargo to invalidate the built crate whenever any of the
         // included header files changed.
