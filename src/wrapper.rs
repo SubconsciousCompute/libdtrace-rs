@@ -195,6 +195,23 @@ impl dtrace_hdl {
         }
     }
 
+    /// Pauses the DTrace consumer based on the interaction rates with the DTrace framework.
+    ///
+    /// The `dtrace_sleep()` function calculates the minimum amount of time a consumer needs to pause before it interacts with the DTrace framework again. This is determined based on three rates maintained by DTrace:
+    ///
+    /// * `switchrate` - Specifies how often the principal buffers must be consumed. Principal buffers are maintained as active and passive pairs per-CPU. The rate at which these buffers switch determines the `switchrate`.
+    /// * `statusrate` - Specifies how often the consumer should check the DTrace status.
+    /// * `aggrate` - Specifies how often the aggregation buffers are consumed. Aggregation buffers are not maintained as pairs in the same way as principal buffers.
+    ///
+    /// The function calculates the earliest time for it to wake up based on the last occurrence of these three events and their associated rates. If that earliest time is in the past, the function returns, otherwise it sleeps until that time.
+    ///
+    /// Note: You do not have to call the `dtrace_sleep()` function itself from a consumer. You can use the `dtrace_getopt()` function to get the values of the appropriate rate and use timers based on those values.
+    pub fn dtrace_sleep(&self) {
+        unsafe {
+            crate::dtrace_sleep(self.handle);
+        }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
