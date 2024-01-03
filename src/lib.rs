@@ -37,7 +37,7 @@ mod tests {
     #[test]
     fn dtrace_handle_buffered() {
         let handle = dtrace_hdl::dtrace_open(DTRACE_VERSION as i32, 0).unwrap();
-        let status = handle.dtrace_handle_buffered(Some(callbacks::buffered), ::core::ptr::null_mut());
+        let status = handle.dtrace_handle_buffered(Some(callbacks::buffered), None);
         match status {
             Ok(_) => {}
             Err(errno) => {

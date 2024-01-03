@@ -64,6 +64,7 @@ impl dtrace_hdl {
     /// # Arguments
     ///
     /// * `handler` - The handler function to be called for each buffered trace record.
+    /// * `arg` - An optional argument to be passed to the handler function. This argument can maintain any state between successive invocations of the handler function.
     ///
     ///     The handler function must have the following signature:
     ///     ```rs
@@ -79,9 +80,13 @@ impl dtrace_hdl {
     pub fn dtrace_handle_buffered(
         &self,
         handler: crate::dtrace_handle_buffered_f,
-        arg: *mut ::core::ffi::c_void,
+        arg: Option<&mut ::core::ffi::c_void>,
     ) -> Result<(), i32> {
         let status: i32;
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
         unsafe {
             status =
                 crate::dtrace_handle_buffered(self.handle, handler, arg);
@@ -232,11 +237,15 @@ impl dtrace_hdl {
         file: Option<std::fs::File>,
         chew: crate::dtrace_consume_probe_f,
         chewrec: crate::dtrace_consume_rec_f,
-        arg: *mut ::core::ffi::c_void,
+        arg: Option<&mut ::core::ffi::c_void>
     ) -> crate::dtrace_workstatus_t {
         use std::os::windows::io::AsRawHandle;
         let fp = match file {
             Some(file) => file.as_raw_handle(),
+            None => std::ptr::null_mut(),
+        };
+        let arg = match arg {
+            Some(arg) => arg,
             None => std::ptr::null_mut(),
         };
         unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, chew, chewrec, arg) }
