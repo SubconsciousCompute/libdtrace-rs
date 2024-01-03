@@ -10,9 +10,12 @@ impl dtrace_hdl {
     ///
     /// # Arguments
     ///
-    /// * `version` - The DTrace version to use.
-    /// * `flags` - Flags to control the behavior of the DTrace instance.
-    ///
+    /// * `version` - The DTrace version to use, `DTRACE_VERSION`. Specifying any version other than the current version causes DTrace to fail.
+    /// * `flags` - Flags to control the behavior of the DTrace instance. Available flags:
+    ///     * `DTRACE_O_NODEV` - Do not attempt to open any DTrace devices.
+    ///     * `DTRACE_O_NOSYS` - Do not attempt to enable any DTrace providers.
+    ///     * `DTRACE_O_LP64` - Force DTrace to operate in 64-bit mode.
+    ///     * `DTRACE_O_ILP32` - Force DTrace to operate in 32-bit mode.
     /// # Returns
     ///
     /// Returns a `Result` containing the `dtrace_hdl` handle if successful, or an error code if
@@ -36,6 +39,8 @@ impl dtrace_hdl {
     ///
     /// * `option` - The name of the option to set.
     /// * `value` - The value to set for the option.
+    /// 
+    /// For a list of available options, see [DTrace Runtime Options](https://docs.oracle.com/en/operating-systems/oracle-linux/dtrace-v2-guide/dtrace_runtime_options.html).
     ///
     /// # Returns
     ///
@@ -57,10 +62,18 @@ impl dtrace_hdl {
 
     /// Sets a handler function for processing buffered trace data.
     ///
+    /// If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
     /// # Arguments
     ///
     /// * `handler` - The handler function to be called for each buffered trace record.
     ///
+    ///     The handler function must have the following signature:
+    ///     ```rs
+    ///         unsafe extern "C" fn buffered(
+    ///            bufdata: *const dtrace_bufdata_t,
+    ///            args: *mut c_void,
+    ///         ) -> c_int
+    ///     ```
     /// # Returns
     ///
     /// Returns `Ok(())` if the handler was set successfully, or an error code if the handler could
@@ -86,9 +99,17 @@ impl dtrace_hdl {
     /// # Arguments
     ///
     /// * `program` - The DTrace program as a string.
-    /// * `spec` - The probespec to associate with the program.
-    /// * `flags` - Flags to control the compilation behavior.
-    /// * `args` - Optional arguments to the DTrace program.
+    /// * `spec` - spec to indicate the context of the probe you are using.
+    ///     * Available values can be found [here](https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/dtrace_program_strcompile-function.html)
+    /// 
+    /// * `flags` - Flags to control the compilation behavior. Common flags:
+    ///     * `DTRACE_C_ZDEFS` - Instructs the compiler to permit probes, whose definitions do not match the existing probes. 
+    ///                          By default, the compiler does not permit this.
+    ///    *  `DTRACE_C_DIFV` - Shows the target language instructions that results from the compilation and additional information to execute the target language instructions.
+    ///    *  `DTRACE_C_CPP` - Instructs the compiler to preprocess the input program with the C preprocessor.
+    /// 
+    /// The full list of flags can be found [here](https://github.com/microsoft/DTrace-on-Windows/blob/0adebf25928264dffdc8240e850503865409f334/lib/libdtrace/common/dtrace.h#L115).
+    /// * `args` - Optional arguments passed to the program.
     ///
     /// # Returns
     ///
@@ -137,7 +158,7 @@ impl dtrace_hdl {
     ///
     /// # Returns
     ///
-    /// Returns the error message as a `String`.
+    /// Returns the error message as a [`String`].
     pub fn dtrace_errmsg(handle: Option<Self>, errno: i32) -> String {
         unsafe {
             let handle = match handle {
