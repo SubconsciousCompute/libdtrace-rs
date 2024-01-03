@@ -212,6 +212,37 @@ impl dtrace_hdl {
         }
     }
 
+    /// Performs all of the work that must to be done periodically by a DTrace consumer.
+    ///
+    /// This function corresponds to the `statusrate`, `switchrate`, and `aggrate` rates. It first calls `dtrace_status()` to determine the status of the trace and then calls `dtrace_aggregate_snap()` and `dtrace_consume()` to consume any aggregation buffer or principal buffer data.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - An optional file handle for output.
+    /// * `chew` - A function pointer that is called for each enabled probe ID (EPID) that is processed from the buffer.
+    /// * `chewrec` - A function pointer that is called for each record that is processed for an EPID.
+    /// * `arg` - An optional argument to be passed to the `chew` and `chewrec` functions. This argument can maintain any state between successive invocations of the functions.
+    ///
+    /// # Returns
+    ///
+    /// * `DTRACE_WORKSTATUS_OKAY` - If the work is successfully performed.
+    /// * `DTRACE_WORKSTATUS_DONE` - If the work is done and no more work is expected.
+    /// * `DTRACE_WORKSTATUS_ERROR` - If an error occurs while performing the work.
+    pub fn dtrace_work(
+        &self,
+        file: Option<std::fs::File>,
+        chew: crate::dtrace_consume_probe_f,
+        chewrec: crate::dtrace_consume_rec_f,
+        arg: *mut ::core::ffi::c_void,
+    ) -> crate::dtrace_workstatus_t {
+        use std::os::windows::io::AsRawHandle;
+        let fp = match file {
+            Some(file) => file.as_raw_handle(),
+            None => std::ptr::null_mut(),
+        };
+        unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, chew, chewrec, arg) }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
