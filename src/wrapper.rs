@@ -243,6 +243,28 @@ impl dtrace_hdl {
         unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, chew, chewrec, arg) }
     }
 
+    /// Stops the DTrace data consumption.
+    ///
+    /// This function communicates to the kernel that this consumer no longer consumes data. The kernel disables any enabled probe and frees the memory for the buffers associated with this DTrace handle.
+    ///
+    /// If the consumer does not call the `dtrace_stop()` function, the kernel eventually performs the cleanup. The data gathering stops either when the `deadman` timer fires or when the DTrace device is closed. The buffers are freed when the device closes. The DTrace device closes either when the consumer calls the `dtrace_close()` function or when the consumer exits. It is best practice for the consumer to call the `dtrace_stop()` function.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the stop operation is successful.
+    /// * `Err(String)` - If the stop operation fails. The error message is returned.
+    pub fn dtrace_stop(&self) -> Result<(), String> {
+        let status;
+        unsafe {
+            status = crate::dtrace_stop(self.handle);
+        }
+        if status != -1 {
+            Err("Could not stop tracing".to_string())
+        } else {
+            Ok(())
+        }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
