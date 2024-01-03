@@ -275,7 +275,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_stop(self.handle);
         }
-        if status != -1 {
+        if status == -1 {
             Err("Could not stop tracing".to_string())
         } else {
             Ok(())
