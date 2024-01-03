@@ -1,5 +1,3 @@
-use crate::callbacks::buffered;
-
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
@@ -81,11 +79,12 @@ impl dtrace_hdl {
     pub fn dtrace_handle_buffered(
         &self,
         handler: crate::dtrace_handle_buffered_f,
+        arg: *mut ::core::ffi::c_void,
     ) -> Result<(), i32> {
         let status: i32;
         unsafe {
             status =
-                crate::dtrace_handle_buffered(self.handle, Some(buffered), std::ptr::null_mut());
+                crate::dtrace_handle_buffered(self.handle, handler, arg);
         }
         if status == 0 {
             Ok(())
