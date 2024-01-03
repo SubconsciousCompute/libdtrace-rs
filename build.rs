@@ -7,7 +7,8 @@ use std::process::Command;
 
 fn main() {
     // Tell cargo to tell rustc to link dtrace.lib
-    println!("cargo:rustc-link-search=target\\dtrace\\build\\x64\\Release\\lib");
+    let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+    println!("cargo:rustc-link-search=native={}", std::path::Path::new(&dir).join("target\\dtrace\\build\\x64\\Release\\lib").display());
     println!("cargo:rustc-link-lib=dtrace");
 
     // Tell cargo to invalidate the built crate whenever the wrapper changes
