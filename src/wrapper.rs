@@ -176,6 +176,25 @@ impl dtrace_hdl {
         }
     }
 
+    /// Starts the execution of the program.
+    /// 
+    /// This action enables the specified probes. After `dtrace_go` function is called, the probes start to generate data.
+    /// # Returns
+    /// 
+    /// * `Ok(())` - If the program execution is successful.
+    /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
+    pub fn dtrace_go(&self) -> Result<(), i32> {
+        let status;
+        unsafe {
+            status = crate::dtrace_go(self.handle);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(self.dtrace_errno())
+        }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
