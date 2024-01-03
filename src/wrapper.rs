@@ -37,7 +37,7 @@ impl dtrace_hdl {
     ///
     /// * `option` - The name of the option to set.
     /// * `value` - The value to set for the option.
-    /// 
+    ///
     /// For a list of available options, see [DTrace Runtime Options](https://docs.oracle.com/en/operating-systems/oracle-linux/dtrace-v2-guide/dtrace_runtime_options.html).
     ///
     /// # Returns
@@ -88,8 +88,7 @@ impl dtrace_hdl {
             None => std::ptr::null_mut(),
         };
         unsafe {
-            status =
-                crate::dtrace_handle_buffered(self.handle, handler, arg);
+            status = crate::dtrace_handle_buffered(self.handle, handler, arg);
         }
         if status == 0 {
             Ok(())
@@ -105,13 +104,13 @@ impl dtrace_hdl {
     /// * `program` - The DTrace program as a string.
     /// * `spec` - spec to indicate the context of the probe you are using.
     ///     * Available values can be found [here](https://docs.oracle.com/en/operating-systems/solaris/oracle-solaris/11.4/dtrace-guide/dtrace_program_strcompile-function.html)
-    /// 
+    ///
     /// * `flags` - Flags to control the compilation behavior. Common flags:
-    ///     * `DTRACE_C_ZDEFS` - Instructs the compiler to permit probes, whose definitions do not match the existing probes. 
+    ///     * `DTRACE_C_ZDEFS` - Instructs the compiler to permit probes, whose definitions do not match the existing probes.
     ///                          By default, the compiler does not permit this.
     ///    *  `DTRACE_C_DIFV` - Shows the target language instructions that results from the compilation and additional information to execute the target language instructions.
     ///    *  `DTRACE_C_CPP` - Instructs the compiler to preprocess the input program with the C preprocessor.
-    /// 
+    ///
     /// The full list of flags can be found [here](https://github.com/microsoft/DTrace-on-Windows/blob/0adebf25928264dffdc8240e850503865409f334/lib/libdtrace/common/dtrace.h#L115).
     /// * `args` - Optional arguments passed to the program.
     ///
@@ -119,7 +118,13 @@ impl dtrace_hdl {
     ///
     /// Returns a `Result` containing a reference to the compiled `dtrace_prog` if successful, or
     /// an error code if the program could not be compiled.
-    pub fn dtrace_program_strcompile(&self, program: &str, spec: crate::dtrace_probespec, flags: u32, args: Option<Vec<String>>) -> Result<&mut crate::dtrace_prog, i32> {
+    pub fn dtrace_program_strcompile(
+        &self,
+        program: &str,
+        spec: crate::dtrace_probespec,
+        flags: u32,
+        args: Option<Vec<String>>,
+    ) -> Result<&mut crate::dtrace_prog, i32> {
         let program = std::ffi::CString::new(program).unwrap();
         let (argc, argv) = match args {
             Some(args) => {
@@ -132,7 +137,7 @@ impl dtrace_hdl {
             }
             None => (0, std::ptr::null()),
         };
-        
+
         let prog;
         unsafe {
             prog = crate::dtrace_program_strcompile(
@@ -146,7 +151,7 @@ impl dtrace_hdl {
         }
 
         if !prog.is_null() {
-            unsafe {Ok(&mut *prog)}
+            unsafe { Ok(&mut *prog) }
         } else {
             Err(self.dtrace_errno())
         }
@@ -164,7 +169,11 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the program execution is successful.
     /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
-    pub fn dtrace_program_exec(&self, program: &mut crate::dtrace_prog, info: Option<&mut crate::dtrace_proginfo>) -> Result<(), i32> {
+    pub fn dtrace_program_exec(
+        &self,
+        program: &mut crate::dtrace_prog,
+        info: Option<&mut crate::dtrace_proginfo>,
+    ) -> Result<(), i32> {
         let status;
         let info = match info {
             Some(info) => info,
@@ -181,10 +190,10 @@ impl dtrace_hdl {
     }
 
     /// Starts the execution of the program.
-    /// 
+    ///
     /// This action enables the specified probes. After `dtrace_go` function is called, the probes start to generate data.
     /// # Returns
-    /// 
+    ///
     /// * `Ok(())` - If the program execution is successful.
     /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
     pub fn dtrace_go(&self) -> Result<(), i32> {
@@ -237,7 +246,7 @@ impl dtrace_hdl {
         file: Option<std::fs::File>,
         chew: crate::dtrace_consume_probe_f,
         chewrec: crate::dtrace_consume_rec_f,
-        arg: Option<&mut ::core::ffi::c_void>
+        arg: Option<&mut ::core::ffi::c_void>,
     ) -> crate::dtrace_workstatus_t {
         use std::os::windows::io::AsRawHandle;
         let fp = match file {
