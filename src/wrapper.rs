@@ -115,7 +115,7 @@ impl dtrace_hdl {
     ///
     /// Returns a `Result` containing a reference to the compiled `dtrace_prog` if successful, or
     /// an error code if the program could not be compiled.
-    pub fn dtrace_program_strcompile(&self, program: &str, spec: crate::dtrace_probespec, flags: u32, args: Option<Vec<String>>) -> Result<&crate::dtrace_prog, i32> {
+    pub fn dtrace_program_strcompile(&self, program: &str, spec: crate::dtrace_probespec, flags: u32, args: Option<Vec<String>>) -> Result<&mut crate::dtrace_prog, i32> {
         let program = std::ffi::CString::new(program).unwrap();
         let (argc, argv) = match args {
             Some(args) => {
@@ -142,7 +142,35 @@ impl dtrace_hdl {
         }
 
         if !prog.is_null() {
-            unsafe {Ok(&*prog)}
+            unsafe {Ok(&mut *prog)}
+        } else {
+            Err(self.dtrace_errno())
+        }
+    }
+
+    /// After the D program is compiled, this function is used to create the object file for the program and download the object file to the kernel.
+    /// The object file contains all the information necessary for the DTrace framework in the kernel to execute the D program.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` - A mutable reference to the data structure representing the compiled program. This is returned by the `dtrace_strcompile()` function.
+    /// * `info` - An optional mutable reference to a variable, which contains information about the D program. The definition of the `dtrace_proginfo_t` can be found [`here`](https://github.com/microsoft/DTrace-on-Windows/blob/0adebf25928264dffdc8240e850503865409f334/lib/libdtrace/common/dtrace.h#L106).
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the program execution is successful.
+    /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
+    pub fn dtrace_program_exec(&self, program: &mut crate::dtrace_prog, info: Option<&mut crate::dtrace_proginfo>) -> Result<(), i32> {
+        let status;
+        let info = match info {
+            Some(info) => info,
+            None => std::ptr::null_mut(),
+        };
+        unsafe {
+            status = crate::dtrace_program_exec(self.handle, program, info);
+        }
+        if status == 0 {
+            Ok(())
         } else {
             Err(self.dtrace_errno())
         }

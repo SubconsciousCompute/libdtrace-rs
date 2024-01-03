@@ -48,20 +48,29 @@ mod tests {
     }
 
     #[test]
-    fn dtrace_compile_program() {
+    fn dtrace_compile_and_exec() {
         let handle = dtrace_hdl::dtrace_open(DTRACE_VERSION as i32, 0).unwrap();
-        let status = handle
+        let prog = handle
                     .dtrace_program_strcompile(
                         "dtrace:::BEGIN {trace(\"Hello World\");} syscall:::entry { @num[execname] = count(); }", 
                         dtrace_probespec::DTRACE_PROBESPEC_NAME, 
                         DTRACE_C_ZDEFS,
                         None);
-        match status {
-            Ok(_) => {}
+        match prog {
+            Ok(prog) => {
+                let status = handle.dtrace_program_exec(&mut *prog, None);
+                match status {
+                    Ok(_) => {}
+                    Err(errno) => {
+                        let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
+                        panic!("{}", msg);
+                    }
+                }
+            }
             Err(errno) => {
                 let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
                 panic!("{}", msg);
             }
-        }
+        }                        
     }
 }
