@@ -3,6 +3,29 @@ pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
 }
 
+pub enum dtrace_aggwalk_order {
+    /// No sorting, use the default order
+    None, 
+    /// First sort by variable name, then for multiple aggregations sort by ascending value
+    Sorted,
+    /// First sort by variable name, then for multiple aggregations sort by key
+    KeySorted,
+    /// First sort by variable name, then for multiple aggregations sort by value (Same as `Sorted`)
+    ValSorted,
+    /// First sort by key, then for multiple aggregations sort by variable (aggregation ID)
+    KeyVarSorted,
+    /// First sort by value, then for multiple aggregations sort by variable (aggregation ID)
+    ValVarSorted,
+    /// Same as `KeySorted` but in reverse order
+    KeyRevSorted,
+    /// Same as `ValSorted` but in reverse order
+    ValRevSorted,
+    /// Same as `KeyVarSorted` but in reverse order
+    KeyVarRevSorted,
+    /// Same as `ValVarSorted` but in reverse order
+    ValVarRevSorted,
+}
+
 impl dtrace_hdl {
     /// Opens a DTrace instance with the specified version and flags.
     ///
@@ -280,11 +303,11 @@ impl dtrace_hdl {
     }
 
     /// Retrieves aggregation data from the kernel
-    /// 
+    ///
     /// This function is called to transfer data from the in-kernel aggregation buffers to the userspace (consumer). The data is not processed at this point.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(())` - If the aggregation data is successfully retrieved.
     /// * `Err(errno)` - If the aggregation data could not be retrieved. The error number (`errno`) is returned.
     pub fn dtrace_aggregate_snap(&self) -> Result<(), i32> {
@@ -314,7 +337,11 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the processing is successful.
     /// * `Err(i32)` - If the processing fails. The error number is returned.
-    pub fn dtrace_aggregate_print(&self, file: Option<std::fs::File>, handler: crate::dtrace_aggregate_walk_f) -> Result<(), i32> {
+    pub fn dtrace_aggregate_print(
+        &self,
+        file: Option<std::fs::File>,
+        handler: crate::dtrace_aggregate_walk_f,
+    ) -> Result<(), i32> {
         use std::os::windows::io::AsRawHandle;
         let fp = match file {
             Some(file) => file.as_raw_handle(),
@@ -330,27 +357,45 @@ impl dtrace_hdl {
             Err(self.dtrace_errno())
         }
     }
-    
+
     /// Processes DTrace aggregate data.
     ///
     /// # Arguments
     ///
     /// * `handler` - A function pointer that is called for each aggregate buffer that is processed.
     /// * `arg` - An optional argument to be passed to the `handler` function. This argument can maintain any state between successive invocations of the function.
+    /// * `order` - The order in which the data is processed. One of the members of the [`dtrace_aggwalk_order`] enum.
     ///
     /// # Returns
     ///
     /// * `Ok(())` - If the processing is successful.
     /// * `Err(i32)` - If the processing fails. The error number is returned.
-    pub fn dtrace_aggregate_walk(&self, handler: crate::dtrace_aggregate_f, arg: Option<*mut ::core::ffi::c_void>) -> Result<(), i32> {
+    pub fn dtrace_aggregate_walk(
+        &self,
+        handler: crate::dtrace_aggregate_f,
+        arg: Option<*mut ::core::ffi::c_void>,
+        order: dtrace_aggwalk_order,
+    ) -> Result<(), i32> {
         let status;
         let arg = match arg {
             Some(arg) => arg,
             None => std::ptr::null_mut(),
         };
         unsafe {
-            status = crate::dtrace_aggregate_walk(self.handle, handler, arg);
+            status = match order {
+                dtrace_aggwalk_order::None => crate::dtrace_aggregate_walk(self.handle, handler, arg),
+                dtrace_aggwalk_order::Sorted
+                | dtrace_aggwalk_order::ValSorted => crate::dtrace_aggregate_walk_sorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::KeySorted => crate::dtrace_aggregate_walk_keysorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::KeyVarSorted => crate::dtrace_aggregate_walk_keyvarsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::ValVarSorted => crate::dtrace_aggregate_walk_valvarsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::KeyRevSorted => crate::dtrace_aggregate_walk_keyrevsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::ValRevSorted => crate::dtrace_aggregate_walk_valrevsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::KeyVarRevSorted => crate::dtrace_aggregate_walk_keyvarrevsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::ValVarRevSorted => crate::dtrace_aggregate_walk_valvarrevsorted(self.handle, handler, arg),
+            };
         }
+
         if status == 0 {
             Ok(())
         } else {
