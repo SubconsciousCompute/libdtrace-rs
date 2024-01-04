@@ -68,10 +68,7 @@ impl dtrace_hdl {
     ///
     ///     The handler function must have the following signature:
     ///     ```rs
-    ///         unsafe extern "C" fn buffered(
-    ///            bufdata: *const dtrace_bufdata_t,
-    ///            args: *mut c_void,
-    ///         ) -> c_int
+    ///     unsafe extern "C" fn(*const dtrace_bufdata_t, *mut c_void) -> c_int
     ///     ```
     /// # Returns
     ///
