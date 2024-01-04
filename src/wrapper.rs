@@ -270,15 +270,15 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the stop operation is successful.
     /// * `Err(String)` - If the stop operation fails. The error message is returned.
-    pub fn dtrace_stop(&self) -> Result<(), String> {
+    pub fn dtrace_stop(&self) -> Result<(), i32> {
         let status;
         unsafe {
             status = crate::dtrace_stop(self.handle);
         }
-        if status == -1 {
-            Err("Could not stop tracing".to_string())
-        } else {
+        if status == 0 {
             Ok(())
+        } else {
+            Err(self.dtrace_errno())
         }
     }
 
