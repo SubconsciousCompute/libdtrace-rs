@@ -282,6 +282,26 @@ impl dtrace_hdl {
         }
     }
 
+    /// Retrieves aggregation data from the kernel
+    /// 
+    /// This function is called to transfer data from the in-kernel aggregation buffers to the userspace (consumer). The data is not processed at this point.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(())` - If the aggregation data is successfully retrieved.
+    /// * `Err(errno)` - If the aggregation data could not be retrieved. The error number (`errno`) is returned.
+    pub fn dtrace_aggregate_snap(&self) -> Result<(), i32> {
+        let status;
+        unsafe {
+            status = crate::dtrace_aggregate_snap(self.handle);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(self.dtrace_errno())
+        }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
