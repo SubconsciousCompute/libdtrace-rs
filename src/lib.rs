@@ -4,6 +4,7 @@
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 mod callbacks;
 mod wrapper;
+mod utils;
 
 #[cfg(test)]
 mod tests {
@@ -14,9 +15,8 @@ mod tests {
         let handle = dtrace_hdl::dtrace_open(DTRACE_VERSION as i32, 0);
         match handle {
             Ok(_) => {}
-            Err(errno) => {
-                let msg = dtrace_hdl::dtrace_errmsg(None, errno);
-                panic!("{}", msg);
+            Err(error) => {
+                panic!("{}", error);
             }
         }
     }
@@ -27,9 +27,8 @@ mod tests {
         let status = handle.dtrace_setopt("bufsize", "4m");
         match status {
             Ok(_) => {}
-            Err(errno) => {
-                let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
-                panic!("{}", msg);
+            Err(error) => {
+                panic!("{}", error);
             }
         }
     }
@@ -40,9 +39,8 @@ mod tests {
         let status = handle.dtrace_handle_buffered(Some(callbacks::buffered), None);
         match status {
             Ok(_) => {}
-            Err(errno) => {
-                let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
-                panic!("{}", msg);
+            Err(error) => {
+                panic!("{}", error);
             }
         }
     }
@@ -61,15 +59,13 @@ mod tests {
                 let status = handle.dtrace_program_exec(&mut *prog, None);
                 match status {
                     Ok(_) => {}
-                    Err(errno) => {
-                        let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
-                        panic!("{}", msg);
+                    Err(error) => {
+                        panic!("{}", error);
                     }
                 }
             }
-            Err(errno) => {
-                let msg = dtrace_hdl::dtrace_errmsg(Some(handle), errno);
-                panic!("{}", msg);
+            Err(error) => {
+                panic!("{}", error);
             }
         }                        
     }

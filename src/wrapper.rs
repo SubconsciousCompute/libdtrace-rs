@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use crate::utils::DtraceError;
+
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
@@ -42,7 +44,7 @@ impl dtrace_hdl {
     ///
     /// Returns a `Result` containing the `dtrace_hdl` handle if successful, or an error code if
     /// the DTrace instance could not be opened.
-    pub fn dtrace_open(version: i32, flags: i32) -> Result<Self, i32> {
+    pub fn dtrace_open(version: i32, flags: i32) -> Result<Self, DtraceError> {
         let handle: *mut crate::dtrace_hdl_t;
         let mut errp: i32 = 0;
         unsafe {
@@ -51,7 +53,7 @@ impl dtrace_hdl {
         if !handle.is_null() {
             Ok(Self { handle })
         } else {
-            Err(errp)
+            Err(DtraceError::from(errp))
         }
     }
 
@@ -68,7 +70,7 @@ impl dtrace_hdl {
     ///
     /// Returns `Ok(())` if the option was set successfully, or an error code if the option could
     /// not be set.
-    pub fn dtrace_setopt(&self, option: &str, value: &str) -> Result<(), i32> {
+    pub fn dtrace_setopt(&self, option: &str, value: &str) -> Result<(), DtraceError> {
         let option = std::ffi::CString::new(option).unwrap();
         let value = std::ffi::CString::new(value).unwrap();
         let status;
@@ -78,7 +80,7 @@ impl dtrace_hdl {
         if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -102,7 +104,7 @@ impl dtrace_hdl {
         &self,
         handler: crate::dtrace_handle_buffered_f,
         arg: Option<&mut ::core::ffi::c_void>,
-    ) -> Result<(), i32> {
+    ) -> Result<(), DtraceError> {
         let status: i32;
         let arg = match arg {
             Some(arg) => arg,
@@ -111,10 +113,10 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_handle_buffered(self.handle, handler, arg);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -194,7 +196,7 @@ impl dtrace_hdl {
         &self,
         program: &mut crate::dtrace_prog,
         info: Option<&mut crate::dtrace_proginfo>,
-    ) -> Result<(), i32> {
+    ) -> Result<(), DtraceError> {
         let status;
         let info = match info {
             Some(info) => info,
@@ -203,10 +205,10 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_program_exec(self.handle, program, info);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -217,15 +219,15 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the program execution is successful.
     /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
-    pub fn dtrace_go(&self) -> Result<(), i32> {
+    pub fn dtrace_go(&self) -> Result<(), DtraceError> {
         let status;
         unsafe {
             status = crate::dtrace_go(self.handle);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -291,15 +293,15 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the stop operation is successful.
     /// * `Err(String)` - If the stop operation fails. The error message is returned.
-    pub fn dtrace_stop(&self) -> Result<(), i32> {
+    pub fn dtrace_stop(&self) -> Result<(), DtraceError> {
         let status;
         unsafe {
             status = crate::dtrace_stop(self.handle);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -311,15 +313,15 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the aggregation data is successfully retrieved.
     /// * `Err(errno)` - If the aggregation data could not be retrieved. The error number (`errno`) is returned.
-    pub fn dtrace_aggregate_snap(&self) -> Result<(), i32> {
+    pub fn dtrace_aggregate_snap(&self) -> Result<(), DtraceError> {
         let status;
         unsafe {
             status = crate::dtrace_aggregate_snap(self.handle);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -342,7 +344,7 @@ impl dtrace_hdl {
         &self,
         file: Option<std::fs::File>,
         handler: crate::dtrace_aggregate_walk_f,
-    ) -> Result<(), i32> {
+    ) -> Result<(), DtraceError> {
         use std::os::windows::io::AsRawHandle;
         let fp = match file {
             Some(file) => file.as_raw_handle(),
@@ -352,10 +354,10 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_aggregate_print(self.handle, fp as *mut crate::FILE, handler);
         }
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -376,7 +378,7 @@ impl dtrace_hdl {
         handler: crate::dtrace_aggregate_f,
         arg: Option<*mut ::core::ffi::c_void>,
         order: dtrace_aggwalk_order,
-    ) -> Result<(), i32> {
+    ) -> Result<(), DtraceError> {
         let status;
         let arg = match arg {
             Some(arg) => arg,
@@ -397,10 +399,10 @@ impl dtrace_hdl {
             };
         }
 
-        if status == 0 {
+                if status == 0 {
             Ok(())
         } else {
-            Err(self.dtrace_errno())
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
