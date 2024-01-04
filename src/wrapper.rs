@@ -299,6 +299,65 @@ impl dtrace_hdl {
         }
     }
 
+    /// Processes DTrace aggregate data.
+    ///
+    /// The function can be passed a specific `walk()` function. If passed `None`, it defaults to the `dtrace_aggregate_walk_sorted()` function,
+    /// and the callback function passed to the `walk()` function is the default function that the libdtrace library uses to print aggregate data.
+    ///
+    /// # Arguments
+    ///
+    /// * `file` - An optional file handle for output.
+    /// * `handler` - A function pointer that is called for each aggregate buffer that is processed.
+    /// * `arg` - An optional argument to be passed to the `handler` function. This argument can maintain any state between successive invocations of the function.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the processing is successful.
+    /// * `Err(i32)` - If the processing fails. The error number is returned.
+    pub fn dtrace_aggregate_print(&self, file: Option<std::fs::File>, handler: crate::dtrace_aggregate_walk_f) -> Result<(), i32> {
+        use std::os::windows::io::AsRawHandle;
+        let fp = match file {
+            Some(file) => file.as_raw_handle(),
+            None => std::ptr::null_mut(),
+        };
+        let status;
+        unsafe {
+            status = crate::dtrace_aggregate_print(self.handle, fp as *mut crate::FILE, handler);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(self.dtrace_errno())
+        }
+    }
+    
+    /// Processes DTrace aggregate data.
+    ///
+    /// # Arguments
+    ///
+    /// * `handler` - A function pointer that is called for each aggregate buffer that is processed.
+    /// * `arg` - An optional argument to be passed to the `handler` function. This argument can maintain any state between successive invocations of the function.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the processing is successful.
+    /// * `Err(i32)` - If the processing fails. The error number is returned.
+    pub fn dtrace_aggregate_walk(&self, handler: crate::dtrace_aggregate_f, arg: Option<*mut ::core::ffi::c_void>) -> Result<(), i32> {
+        let status;
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
+        unsafe {
+            status = crate::dtrace_aggregate_walk(self.handle, handler, arg);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(self.dtrace_errno())
+        }
+    }
+
     /// Retrieves the error message associated with the specified error number.
     ///
     /// # Arguments
