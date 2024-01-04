@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
