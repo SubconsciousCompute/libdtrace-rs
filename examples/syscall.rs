@@ -44,7 +44,7 @@ fn main() {
 
     loop {
         match handle.dtrace_status().unwrap() {
-            wrapper::dtrace_status::Ok => {
+            types::dtrace_status::Ok => {
                 handle
                     .dtrace_consume(
                         None, 

@@ -21,6 +21,33 @@ pub enum dtrace_aggwalk_order {
     ValVarRevSorted,
 }
 
+#[repr(u32)]
+pub enum dtrace_status {
+    /// No Status
+    None = crate::DTRACE_STATUS_NONE,
+    /// Status OK
+    Ok = crate::DTRACE_STATUS_OKAY,
+    /// `exit()` was called, tacing stopped
+    Exited = crate::DTRACE_STATUS_EXITED,
+    /// Fill buffer full, tracing stopped
+    Filled = crate::DTRACE_STATUS_FILLED,
+    /// Tracing already stopped
+    Stopped = crate::DTRACE_STATUS_STOPPED,
+}
+
+impl From<u32> for dtrace_status {
+    fn from(value: u32) -> Self {
+        match value {
+            crate::DTRACE_STATUS_NONE => dtrace_status::None,
+            crate::DTRACE_STATUS_OKAY => dtrace_status::Ok,
+            crate::DTRACE_STATUS_EXITED => dtrace_status::Exited,
+            crate::DTRACE_STATUS_FILLED => dtrace_status::Filled,
+            crate::DTRACE_STATUS_STOPPED => dtrace_status::Stopped,
+            _ => panic!("Invalid dtrace_status value"),
+        }
+    }
+}
+
 pub struct dtrace_eprobedesc {
     pub dtepd_epid: u32,
     pub dtepd_probeid: u32,

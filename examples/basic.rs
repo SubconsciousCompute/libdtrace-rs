@@ -19,7 +19,7 @@ fn main() {
     handle.dtrace_go().unwrap();
 
     match handle.dtrace_status().unwrap() {
-        wrapper::dtrace_status::Ok => {
+        types::dtrace_status::Ok => {
             handle
                 .dtrace_consume(
                     None, 

@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::utils::DtraceError;
-use crate::types::dtrace_aggwalk_order;
+use crate::types::{dtrace_status, dtrace_aggwalk_order};
 
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
@@ -23,33 +23,6 @@ impl Drop for dtrace_hdl {
 
 unsafe impl Send for dtrace_hdl {}
 unsafe impl Sync for dtrace_hdl {}
-
-#[repr(u32)]
-pub enum dtrace_status {
-    /// No Status
-    None = crate::DTRACE_STATUS_NONE,
-    /// Status OK
-    Ok = crate::DTRACE_STATUS_OKAY,
-    /// `exit()` was called, tacing stopped
-    Exited = crate::DTRACE_STATUS_EXITED,
-    /// Fill buffer full, tracing stopped
-    Filled = crate::DTRACE_STATUS_FILLED,
-    /// Tracing already stopped
-    Stopped = crate::DTRACE_STATUS_STOPPED,
-}
-
-impl From<u32> for dtrace_status {
-    fn from(value: u32) -> Self {
-        match value {
-            crate::DTRACE_STATUS_NONE => dtrace_status::None,
-            crate::DTRACE_STATUS_OKAY => dtrace_status::Ok,
-            crate::DTRACE_STATUS_EXITED => dtrace_status::Exited,
-            crate::DTRACE_STATUS_FILLED => dtrace_status::Filled,
-            crate::DTRACE_STATUS_STOPPED => dtrace_status::Stopped,
-            _ => panic!("Invalid dtrace_status value"),
-        }
-    }
-}
 
 impl dtrace_hdl {
     /* General Purpose APIs BEGIN */
