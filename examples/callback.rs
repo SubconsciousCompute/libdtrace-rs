@@ -43,6 +43,17 @@ fn main() {
     handle.dtrace_program_exec(prog, None).unwrap();
     handle.dtrace_go().unwrap();
 
-    handle.dtrace_work(None, Some(custom_callback), Some(callbacks::chew_rec), None);
+    match handle.dtrace_status().unwrap() {
+        wrapper::dtrace_status::Ok => {
+            handle
+                .dtrace_consume(
+                    None, 
+                    Some(custom_callback), 
+                    Some(callbacks::chew_rec), 
+                    None
+                ).unwrap();
+        }
+        _ => {}
+    }
     handle.dtrace_stop().unwrap();
 }

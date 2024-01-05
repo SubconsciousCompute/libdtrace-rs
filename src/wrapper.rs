@@ -120,11 +120,11 @@ impl dtrace_hdl {
     pub fn dtrace_status(&self) -> Result<dtrace_status, DtraceError> {
         let status;
         unsafe {
-            status = crate::dtrace_status(self.handle) as u32;
+            status = crate::dtrace_status(self.handle);
         }
         
-        if status == 0 {
-            Ok(dtrace_status::from(status))
+        if status != -1 {
+            Ok(dtrace_status::from(status as u32))
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
         }
