@@ -38,8 +38,8 @@ pub unsafe extern "C" fn walk(
     aggdata: *const crate::dtrace_aggdata_t,
     _arg: *mut ::core::ffi::c_void,
 ) -> ::core::ffi::c_int {
-    let aggdesc = (*aggdata).dtada_desc;
-    let dtagd_rec = (*aggdesc).dtagd_rec.as_ptr();
+    let aggdesc = crate::types::dtrace_aggdesc::from((*aggdata).dtada_desc);
+    let dtagd_rec = aggdesc.dtagd_rec;
     let raw = (*aggdata).dtada_data as *mut u8;
 
     let nrec = *dtagd_rec.offset(0);

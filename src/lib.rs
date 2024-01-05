@@ -5,6 +5,7 @@ include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 pub mod callbacks;
 pub mod wrapper;
 pub mod utils;
+pub mod types;
 
 #[cfg(test)]
 mod tests {
