@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::types::{dtrace_aggwalk_order, dtrace_status};
 use crate::utils::DtraceError;
-
+use ::core::ffi::c_int;
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
@@ -40,8 +40,8 @@ impl dtrace_hdl {
     ///
     /// Returns a `Result` containing the `dtrace_hdl` handle if successful, or an error code if
     /// the DTrace instance could not be opened.
-    pub fn dtrace_open(version: i32, flags: i32) -> Result<Self, DtraceError> {
-        let mut errp: i32 = 0;
+    pub fn dtrace_open(version: c_int, flags: c_int) -> Result<Self, DtraceError> {
+        let mut errp: c_int = 0;
 
         let handle = unsafe { crate::dtrace_open(version, flags, &mut errp) };
 
@@ -105,7 +105,7 @@ impl dtrace_hdl {
     /// # Returns
     ///
     /// Returns the current error number.
-    pub fn dtrace_errno(&self) -> i32 {
+    pub fn dtrace_errno(&self) -> c_int {
         unsafe { crate::dtrace_errno(self.handle) }
     }
 
@@ -120,7 +120,7 @@ impl dtrace_hdl {
     /// # Returns
     ///
     /// Returns the error message as a [`String`].
-    pub fn dtrace_errmsg<'a>(handle: Option<&'a Self>, errno: i32) -> &'a str {
+    pub fn dtrace_errmsg<'a>(handle: Option<&'a Self>, errno: c_int) -> &'a str {
         unsafe {
             let handle = match handle {
                 Some(handle) => handle.handle,
@@ -184,7 +184,7 @@ impl dtrace_hdl {
         spec: crate::dtrace_probespec,
         flags: u32,
         args: Option<Vec<String>>,
-    ) -> Result<&'a mut crate::dtrace_prog, i32> {
+    ) -> Result<&'a mut crate::dtrace_prog, c_int> {
         let program = std::ffi::CString::new(program).unwrap();
 
         // Break the arguments into argc and argv
@@ -196,7 +196,7 @@ impl dtrace_hdl {
                     let arg = std::ffi::CString::new(arg).unwrap();
                     argv.push(arg.as_ptr() as *mut ::core::ffi::c_char);
                 }
-                (argv.len() as i32, argv.as_ptr())
+                (argv.len() as c_int, argv.as_ptr())
             }
         };
 
