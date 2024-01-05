@@ -1,3 +1,26 @@
+pub enum dtrace_aggwalk_order {
+    /// No sorting, use the default order
+    None,
+    /// First sort by variable name, then for multiple aggregations sort by ascending value
+    Sorted,
+    /// First sort by variable name, then for multiple aggregations sort by key
+    KeySorted,
+    /// First sort by variable name, then for multiple aggregations sort by value (Same as `Sorted`)
+    ValSorted,
+    /// First sort by key, then for multiple aggregations sort by variable (aggregation ID)
+    KeyVarSorted,
+    /// First sort by value, then for multiple aggregations sort by variable (aggregation ID)
+    ValVarSorted,
+    /// Same as `KeySorted` but in reverse order
+    KeyRevSorted,
+    /// Same as `ValSorted` but in reverse order
+    ValRevSorted,
+    /// Same as `KeyVarSorted` but in reverse order
+    KeyVarRevSorted,
+    /// Same as `ValVarSorted` but in reverse order
+    ValVarRevSorted,
+}
+
 pub struct dtrace_eprobedesc {
     pub dtepd_epid: u32,
     pub dtepd_probeid: u32,
