@@ -2,9 +2,9 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
-mod callbacks;
-mod wrapper;
-mod utils;
+pub mod callbacks;
+pub mod wrapper;
+pub mod utils;
 
 #[cfg(test)]
 mod tests {
