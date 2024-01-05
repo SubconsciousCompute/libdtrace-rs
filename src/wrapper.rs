@@ -298,6 +298,39 @@ impl dtrace_hdl {
         }
     }
 
+    /// Iterates over the statements associated with a D program, calling the specified function on each statement.
+    ///
+    /// # Arguments
+    ///
+    /// * `program` -  A mutable reference to the data structure representing the compiled program. This is returned by the `dtrace_strcompile()` function.
+    /// * `handler` - The function to call on each statement.
+    /// 
+    ///     The handler function must have the following signature:
+    ///     ```rs
+    ///     unsafe extern "C" fn( *mut dtrace_hdl_t, *mut dtrace_prog_t, *mut dtrace_stmtdesc_t, *mut c_void) -> c_int
+    ///     ```
+    /// * `arg` - An optional argument to be passed to the handler function. This argument can maintain any state between successive invocations of the handler function.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the iteration is successful.
+    /// * `Err(errno)` - If the iteration fails. The error number (`errno`) is returned.
+    pub fn dtrace_stmt_iter(&self, program: &mut crate::dtrace_prog, handler: crate::dtrace_stmt_f, arg: Option<*mut ::core::ffi::c_void>) -> Result<(), DtraceError> {
+        let status;
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
+        unsafe {
+            status = crate::dtrace_stmt_iter(self.handle, program, handler, arg);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
+        }
+    }
+
     /* Programming APIs END */
 
     /* Data Consumption APIs START */
