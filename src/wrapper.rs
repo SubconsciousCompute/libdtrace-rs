@@ -13,6 +13,16 @@ impl From<*mut crate::dtrace_hdl_t> for dtrace_hdl {
     }
 }
 
+impl Drop for dtrace_hdl {
+    fn drop(&mut self) {
+        unsafe {
+            crate::dtrace_close(self.handle);
+        }
+    }
+}
+
+unsafe impl Send for dtrace_hdl {}
+unsafe impl Sync for dtrace_hdl {}
 
 #[repr(u32)]
 pub enum dtrace_status {
@@ -580,12 +590,4 @@ impl dtrace_hdl {
     }
 
     /* Aggregation APIs END */
-}
-
-impl Drop for dtrace_hdl {
-    fn drop(&mut self) {
-        unsafe {
-            crate::dtrace_close(self.handle);
-        }
-    }
 }
