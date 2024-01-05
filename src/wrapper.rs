@@ -119,6 +119,46 @@ impl dtrace_hdl {
         status.into()
     }
 
+    /// Consumes data from the principal buffers.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `file` - An optional file handle for output.
+    /// * `p_hldr` - A pointer to a function that processes an `enabling control block (ECB)`. An `ECB` is a clause from a D program associated with the enabled probe.
+    /// * `r_hldr` - A pointer to a function that processes a records from the `ECB`.
+    /// * `arg` - An optional argument to be passed to the `p_hldr` and `r_hldr` functions. This argument can maintain any state between successive invocations of the functions.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(())` - If the consumption is successful.
+    /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
+    pub fn dtrace_consume(
+        &self,
+        file: Option<std::fs::File>,
+        p_hldr: crate::dtrace_consume_probe_f,
+        r_hldr: crate::dtrace_consume_rec_f,
+        arg: Option<*mut ::core::ffi::c_void>,
+    ) -> Result<(), DtraceError> {
+        use std::os::windows::io::AsRawHandle;
+        let fp = match file {
+            Some(file) => file.as_raw_handle(),
+            None => std::ptr::null_mut(),
+        };
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
+        let status;
+        unsafe {
+            status = crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
+        }
+    }
+
     /// Sets a handler function for processing buffered trace data.
     ///
     /// If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
