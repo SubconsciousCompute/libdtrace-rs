@@ -20,14 +20,9 @@ fn main() {
 
     for _ in 0..10 {
         handle.dtrace_sleep(); // Wait until new data is available
-        match handle.dtrace_work(None, Some(callbacks::chew), Some(callbacks::chew_rec), None) {
-            dtrace_workstatus_t::DTRACE_WORKSTATUS_DONE => break,
-            dtrace_workstatus_t::DTRACE_WORKSTATUS_ERROR => {
-                let error = utils::DtraceError::from(handle.dtrace_errno());
-                panic!("Error: {}", error);
-            }
-            dtrace_workstatus_t::DTRACE_WORKSTATUS_OKAY => (),
-        }
+        handle
+            .dtrace_work(None, Some(callbacks::chew), Some(callbacks::chew_rec), None)
+            .unwrap();
     }
 
     handle.dtrace_aggregate_print(None, None).unwrap();

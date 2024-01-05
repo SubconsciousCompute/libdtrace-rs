@@ -57,7 +57,7 @@ mod tests {
                         None);
         match prog {
             Ok(prog) => {
-                let status = handle.dtrace_program_exec(&mut *prog, None);
+                let status = handle.dtrace_program_exec(prog, None);
                 match status {
                     Ok(_) => {}
                     Err(error) => {
