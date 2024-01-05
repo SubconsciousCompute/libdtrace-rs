@@ -353,8 +353,8 @@ impl dtrace_hdl {
     pub fn dtrace_work(
         &self,
         file: Option<std::fs::File>,
-        chew: crate::dtrace_consume_probe_f,
-        chewrec: crate::dtrace_consume_rec_f,
+        p_hldr: crate::dtrace_consume_probe_f,
+        r_hldr: crate::dtrace_consume_rec_f,
         arg: Option<&mut ::core::ffi::c_void>,
     ) -> crate::dtrace_workstatus_t {
         use std::os::windows::io::AsRawHandle;
@@ -366,7 +366,7 @@ impl dtrace_hdl {
             Some(arg) => arg,
             None => std::ptr::null_mut(),
         };
-        unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, chew, chewrec, arg) }
+        unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg) }
     }
 
     /// Stops the DTrace data consumption.
