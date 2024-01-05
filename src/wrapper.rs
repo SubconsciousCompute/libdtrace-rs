@@ -111,12 +111,23 @@ impl dtrace_hdl {
         }
     }
 
-    pub fn dtrace_status(&self) -> dtrace_status {
+    /// Determines the status of the running DTrace instance.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(dtrace_status)` - If the status is successfully determined.
+    /// * `Err(errno)` - If the status could not be determined.
+    pub fn dtrace_status(&self) -> Result<dtrace_status, DtraceError> {
         let status;
         unsafe {
             status = crate::dtrace_status(self.handle) as u32;
         }
-        status.into()
+        
+        if status == 0 {
+            Ok(dtrace_status::from(status))
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
+        }
     }
 
     /// Consumes data from the principal buffers.
