@@ -184,7 +184,7 @@ impl dtrace_hdl {
         spec: crate::dtrace_probespec,
         flags: u32,
         args: Option<Vec<String>>,
-    ) -> Result<&'a mut crate::dtrace_prog, c_int> {
+    ) -> Result<&'a mut crate::dtrace_prog, DtraceError> {
         let program = std::ffi::CString::new(program).unwrap();
 
         // Break the arguments into argc and argv
@@ -213,7 +213,7 @@ impl dtrace_hdl {
         }
 
         if prog.is_null() {
-            return Err(self.dtrace_errno());
+            return Err(DtraceError::from(self.dtrace_errno()));
         }
 
         unsafe { Ok(&mut *prog) }
