@@ -8,7 +8,7 @@ pub struct dtrace_hdl {
 
 pub enum dtrace_aggwalk_order {
     /// No sorting, use the default order
-    None, 
+    None,
     /// First sort by variable name, then for multiple aggregations sort by ascending value
     Sorted,
     /// First sort by variable name, then for multiple aggregations sort by key
@@ -97,7 +97,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_go(self.handle);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -119,7 +119,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_stop(self.handle);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -291,7 +291,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_program_exec(self.handle, program, info);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -304,7 +304,7 @@ impl dtrace_hdl {
     ///
     /// * `program` -  A mutable reference to the data structure representing the compiled program. This is returned by the `dtrace_strcompile()` function.
     /// * `handler` - The function to call on each statement.
-    /// 
+    ///
     ///     The handler function must have the following signature:
     ///     ```rs
     ///     unsafe extern "C" fn( *mut dtrace_hdl_t, *mut dtrace_prog_t, *mut dtrace_stmtdesc_t, *mut c_void) -> c_int
@@ -315,7 +315,12 @@ impl dtrace_hdl {
     ///
     /// * `Ok(())` - If the iteration is successful.
     /// * `Err(errno)` - If the iteration fails. The error number (`errno`) is returned.
-    pub fn dtrace_stmt_iter(&self, program: &mut crate::dtrace_prog, handler: crate::dtrace_stmt_f, arg: Option<*mut ::core::ffi::c_void>) -> Result<(), DtraceError> {
+    pub fn dtrace_stmt_iter(
+        &self,
+        program: &mut crate::dtrace_prog,
+        handler: crate::dtrace_stmt_f,
+        arg: Option<*mut ::core::ffi::c_void>,
+    ) -> Result<(), DtraceError> {
         let status;
         let arg = match arg {
             Some(arg) => arg,
@@ -335,9 +340,9 @@ impl dtrace_hdl {
 
     /* Data Consumption APIs START */
     /// Determines the status of the running DTrace instance.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(dtrace_status)` - If the status is successfully determined.
     /// * `Err(errno)` - If the status could not be determined.
     pub fn dtrace_status(&self) -> Result<dtrace_status, DtraceError> {
@@ -345,7 +350,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_status(self.handle);
         }
-        
+
         if status != -1 {
             Ok(dtrace_status::from(status as u32))
         } else {
@@ -354,16 +359,16 @@ impl dtrace_hdl {
     }
 
     /// Consumes data from the principal buffers.
-    /// 
+    ///
     /// # Arguments
-    /// 
+    ///
     /// * `file` - An optional file handle for output.
     /// * `p_hldr` - A pointer to a function that processes an `enabling control block (ECB)`. An `ECB` is a clause from a D program associated with the enabled probe.
     /// * `r_hldr` - A pointer to a function that processes a records from the `ECB`.
     /// * `arg` - An optional argument to be passed to the `p_hldr` and `r_hldr` functions. This argument can maintain any state between successive invocations of the functions.
-    /// 
+    ///
     /// # Returns
-    /// 
+    ///
     /// * `Ok(())` - If the consumption is successful.
     /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
     pub fn dtrace_consume(
@@ -384,7 +389,8 @@ impl dtrace_hdl {
         };
         let status;
         unsafe {
-            status = crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg);
+            status =
+                crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg);
         }
         if status == 0 {
             Ok(())
@@ -460,7 +466,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_handle_buffered(self.handle, handler, arg);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -483,7 +489,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_aggregate_snap(self.handle);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -519,7 +525,7 @@ impl dtrace_hdl {
         unsafe {
             status = crate::dtrace_aggregate_print(self.handle, fp as *mut crate::FILE, handler);
         }
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
@@ -551,20 +557,37 @@ impl dtrace_hdl {
         };
         unsafe {
             status = match order {
-                dtrace_aggwalk_order::None => crate::dtrace_aggregate_walk(self.handle, handler, arg),
-                dtrace_aggwalk_order::Sorted
-                | dtrace_aggwalk_order::ValSorted => crate::dtrace_aggregate_walk_sorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::KeySorted => crate::dtrace_aggregate_walk_keysorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::KeyVarSorted => crate::dtrace_aggregate_walk_keyvarsorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::ValVarSorted => crate::dtrace_aggregate_walk_valvarsorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::KeyRevSorted => crate::dtrace_aggregate_walk_keyrevsorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::ValRevSorted => crate::dtrace_aggregate_walk_valrevsorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::KeyVarRevSorted => crate::dtrace_aggregate_walk_keyvarrevsorted(self.handle, handler, arg),
-                dtrace_aggwalk_order::ValVarRevSorted => crate::dtrace_aggregate_walk_valvarrevsorted(self.handle, handler, arg),
+                dtrace_aggwalk_order::None => {
+                    crate::dtrace_aggregate_walk(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::Sorted | dtrace_aggwalk_order::ValSorted => {
+                    crate::dtrace_aggregate_walk_sorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::KeySorted => {
+                    crate::dtrace_aggregate_walk_keysorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::KeyVarSorted => {
+                    crate::dtrace_aggregate_walk_keyvarsorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::ValVarSorted => {
+                    crate::dtrace_aggregate_walk_valvarsorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::KeyRevSorted => {
+                    crate::dtrace_aggregate_walk_keyrevsorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::ValRevSorted => {
+                    crate::dtrace_aggregate_walk_valrevsorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::KeyVarRevSorted => {
+                    crate::dtrace_aggregate_walk_keyvarrevsorted(self.handle, handler, arg)
+                }
+                dtrace_aggwalk_order::ValVarRevSorted => {
+                    crate::dtrace_aggregate_walk_valvarrevsorted(self.handle, handler, arg)
+                }
             };
         }
 
-                if status == 0 {
+        if status == 0 {
             Ok(())
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
