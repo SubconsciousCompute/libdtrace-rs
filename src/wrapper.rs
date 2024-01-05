@@ -57,6 +57,7 @@ impl From<u32> for dtrace_status {
 }
 
 impl dtrace_hdl {
+    /* General Purpose APIs BEGIN */
     /// Opens a DTrace instance with the specified version and flags.
     ///
     /// # Arguments
@@ -81,6 +82,97 @@ impl dtrace_hdl {
             Ok(Self { handle })
         } else {
             Err(DtraceError::from(errp))
+        }
+    }
+
+    /// Starts the execution of the program.
+    ///
+    /// This action enables the specified probes. After `dtrace_go` function is called, the probes start to generate data.
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the program execution is successful.
+    /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
+    pub fn dtrace_go(&self) -> Result<(), DtraceError> {
+        let status;
+        unsafe {
+            status = crate::dtrace_go(self.handle);
+        }
+                if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
+        }
+    }
+
+    /// Stops the DTrace data consumption.
+    ///
+    /// This function communicates to the kernel that this consumer no longer consumes data. The kernel disables any enabled probe and frees the memory for the buffers associated with this DTrace handle.
+    ///
+    /// If the consumer does not call the `dtrace_stop()` function, the kernel eventually performs the cleanup. The data gathering stops either when the `deadman` timer fires or when the DTrace device is closed. The buffers are freed when the device closes. The DTrace device closes either when the consumer calls the `dtrace_close()` function or when the consumer exits. It is best practice for the consumer to call the `dtrace_stop()` function.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(())` - If the stop operation is successful.
+    /// * `Err(String)` - If the stop operation fails. The error message is returned.
+    pub fn dtrace_stop(&self) -> Result<(), DtraceError> {
+        let status;
+        unsafe {
+            status = crate::dtrace_stop(self.handle);
+        }
+                if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
+        }
+    }
+
+    /// Pauses the DTrace consumer based on the interaction rates with the DTrace framework.
+    ///
+    /// The `dtrace_sleep()` function calculates the minimum amount of time a consumer needs to pause before it interacts with the DTrace framework again. This is determined based on three rates maintained by DTrace:
+    ///
+    /// * `switchrate` - Specifies how often the principal buffers must be consumed. Principal buffers are maintained as active and passive pairs per-CPU. The rate at which these buffers switch determines the `switchrate`.
+    /// * `statusrate` - Specifies how often the consumer should check the DTrace status.
+    /// * `aggrate` - Specifies how often the aggregation buffers are consumed. Aggregation buffers are not maintained as pairs in the same way as principal buffers.
+    ///
+    /// The function calculates the earliest time for it to wake up based on the last occurrence of these three events and their associated rates. If that earliest time is in the past, the function returns, otherwise it sleeps until that time.
+    ///
+    /// Note: You do not have to call the `dtrace_sleep()` function itself from a consumer. You can use the `dtrace_getopt()` function to get the values of the appropriate rate and use timers based on those values.
+    pub fn dtrace_sleep(&self) {
+        unsafe {
+            crate::dtrace_sleep(self.handle);
+        }
+    }
+
+    /// Retrieves the current error number for the DTrace instance.
+    ///
+    /// # Returns
+    ///
+    /// Returns the current error number.
+    pub fn dtrace_errno(&self) -> i32 {
+        unsafe { crate::dtrace_errno(self.handle) }
+    }
+
+    /// Retrieves the error message associated with the specified error number.
+    ///
+    /// # Arguments
+    ///
+    /// * `handle` - An optional handle to a DTrace instance. If `None`, the error message will be
+    ///              retrieved for the global DTrace instance.
+    /// * `errno` - The error number.
+    ///
+    /// # Returns
+    ///
+    /// Returns the error message as a [`String`].
+    pub fn dtrace_errmsg(handle: Option<Self>, errno: i32) -> String {
+        unsafe {
+            let handle = match handle {
+                Some(handle) => handle.handle,
+                None => std::ptr::null_mut(),
+            };
+            let msg = crate::dtrace_errmsg(handle, errno);
+            let msg = ::core::ffi::CStr::from_ptr(msg);
+            let msg = msg.to_str().unwrap();
+            msg.to_string()
         }
     }
 
@@ -111,101 +203,9 @@ impl dtrace_hdl {
         }
     }
 
-    /// Determines the status of the running DTrace instance.
-    /// 
-    /// # Returns
-    /// 
-    /// * `Ok(dtrace_status)` - If the status is successfully determined.
-    /// * `Err(errno)` - If the status could not be determined.
-    pub fn dtrace_status(&self) -> Result<dtrace_status, DtraceError> {
-        let status;
-        unsafe {
-            status = crate::dtrace_status(self.handle);
-        }
-        
-        if status != -1 {
-            Ok(dtrace_status::from(status as u32))
-        } else {
-            Err(DtraceError::from(self.dtrace_errno()))
-        }
-    }
+    /* General Purpose APIs END */
 
-    /// Consumes data from the principal buffers.
-    /// 
-    /// # Arguments
-    /// 
-    /// * `file` - An optional file handle for output.
-    /// * `p_hldr` - A pointer to a function that processes an `enabling control block (ECB)`. An `ECB` is a clause from a D program associated with the enabled probe.
-    /// * `r_hldr` - A pointer to a function that processes a records from the `ECB`.
-    /// * `arg` - An optional argument to be passed to the `p_hldr` and `r_hldr` functions. This argument can maintain any state between successive invocations of the functions.
-    /// 
-    /// # Returns
-    /// 
-    /// * `Ok(())` - If the consumption is successful.
-    /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
-    pub fn dtrace_consume(
-        &self,
-        file: Option<std::fs::File>,
-        p_hldr: crate::dtrace_consume_probe_f,
-        r_hldr: crate::dtrace_consume_rec_f,
-        arg: Option<*mut ::core::ffi::c_void>,
-    ) -> Result<(), DtraceError> {
-        use std::os::windows::io::AsRawHandle;
-        let fp = match file {
-            Some(file) => file.as_raw_handle(),
-            None => std::ptr::null_mut(),
-        };
-        let arg = match arg {
-            Some(arg) => arg,
-            None => std::ptr::null_mut(),
-        };
-        let status;
-        unsafe {
-            status = crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg);
-        }
-        if status == 0 {
-            Ok(())
-        } else {
-            Err(DtraceError::from(self.dtrace_errno()))
-        }
-    }
-
-    /// Sets a handler function for processing buffered trace data.
-    ///
-    /// If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
-    /// # Arguments
-    ///
-    /// * `handler` - The handler function to be called for each buffered trace record.
-    /// * `arg` - An optional argument to be passed to the handler function. This argument can maintain any state between successive invocations of the handler function.
-    ///
-    ///     The handler function must have the following signature:
-    ///     ```rs
-    ///     unsafe extern "C" fn(*const dtrace_bufdata_t, *mut c_void) -> c_int
-    ///     ```
-    /// # Returns
-    ///
-    /// Returns `Ok(())` if the handler was set successfully, or an error code if the handler could
-    /// not be set.
-    pub fn dtrace_handle_buffered(
-        &self,
-        handler: crate::dtrace_handle_buffered_f,
-        arg: Option<&mut ::core::ffi::c_void>,
-    ) -> Result<(), DtraceError> {
-        let status: i32;
-        let arg = match arg {
-            Some(arg) => arg,
-            None => std::ptr::null_mut(),
-        };
-        unsafe {
-            status = crate::dtrace_handle_buffered(self.handle, handler, arg);
-        }
-                if status == 0 {
-            Ok(())
-        } else {
-            Err(DtraceError::from(self.dtrace_errno()))
-        }
-    }
-
+    /* Programming APIs START */
     /// Compiles a DTrace program from a string representation.
     ///
     /// # Arguments
@@ -298,39 +298,65 @@ impl dtrace_hdl {
         }
     }
 
-    /// Starts the execution of the program.
-    ///
-    /// This action enables the specified probes. After `dtrace_go` function is called, the probes start to generate data.
+    /* Programming APIs END */
+
+    /* Data Consumption APIs START */
+    /// Determines the status of the running DTrace instance.
+    /// 
     /// # Returns
-    ///
-    /// * `Ok(())` - If the program execution is successful.
-    /// * `Err(errno)` - If the program execution fails. The error number (`errno`) is returned.
-    pub fn dtrace_go(&self) -> Result<(), DtraceError> {
+    /// 
+    /// * `Ok(dtrace_status)` - If the status is successfully determined.
+    /// * `Err(errno)` - If the status could not be determined.
+    pub fn dtrace_status(&self) -> Result<dtrace_status, DtraceError> {
         let status;
         unsafe {
-            status = crate::dtrace_go(self.handle);
+            status = crate::dtrace_status(self.handle);
         }
-                if status == 0 {
-            Ok(())
+        
+        if status != -1 {
+            Ok(dtrace_status::from(status as u32))
         } else {
             Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
-    /// Pauses the DTrace consumer based on the interaction rates with the DTrace framework.
-    ///
-    /// The `dtrace_sleep()` function calculates the minimum amount of time a consumer needs to pause before it interacts with the DTrace framework again. This is determined based on three rates maintained by DTrace:
-    ///
-    /// * `switchrate` - Specifies how often the principal buffers must be consumed. Principal buffers are maintained as active and passive pairs per-CPU. The rate at which these buffers switch determines the `switchrate`.
-    /// * `statusrate` - Specifies how often the consumer should check the DTrace status.
-    /// * `aggrate` - Specifies how often the aggregation buffers are consumed. Aggregation buffers are not maintained as pairs in the same way as principal buffers.
-    ///
-    /// The function calculates the earliest time for it to wake up based on the last occurrence of these three events and their associated rates. If that earliest time is in the past, the function returns, otherwise it sleeps until that time.
-    ///
-    /// Note: You do not have to call the `dtrace_sleep()` function itself from a consumer. You can use the `dtrace_getopt()` function to get the values of the appropriate rate and use timers based on those values.
-    pub fn dtrace_sleep(&self) {
+    /// Consumes data from the principal buffers.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `file` - An optional file handle for output.
+    /// * `p_hldr` - A pointer to a function that processes an `enabling control block (ECB)`. An `ECB` is a clause from a D program associated with the enabled probe.
+    /// * `r_hldr` - A pointer to a function that processes a records from the `ECB`.
+    /// * `arg` - An optional argument to be passed to the `p_hldr` and `r_hldr` functions. This argument can maintain any state between successive invocations of the functions.
+    /// 
+    /// # Returns
+    /// 
+    /// * `Ok(())` - If the consumption is successful.
+    /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
+    pub fn dtrace_consume(
+        &self,
+        file: Option<std::fs::File>,
+        p_hldr: crate::dtrace_consume_probe_f,
+        r_hldr: crate::dtrace_consume_rec_f,
+        arg: Option<*mut ::core::ffi::c_void>,
+    ) -> Result<(), DtraceError> {
+        use std::os::windows::io::AsRawHandle;
+        let fp = match file {
+            Some(file) => file.as_raw_handle(),
+            None => std::ptr::null_mut(),
+        };
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
+        let status;
         unsafe {
-            crate::dtrace_sleep(self.handle);
+            status = crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg);
+        }
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 
@@ -369,20 +395,37 @@ impl dtrace_hdl {
         unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg) }
     }
 
-    /// Stops the DTrace data consumption.
+    /* Data Consumption APIs END */
+
+    /* Handler APIs START */
+    /// Sets a handler function for processing buffered trace data.
     ///
-    /// This function communicates to the kernel that this consumer no longer consumes data. The kernel disables any enabled probe and frees the memory for the buffers associated with this DTrace handle.
+    /// If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
+    /// # Arguments
     ///
-    /// If the consumer does not call the `dtrace_stop()` function, the kernel eventually performs the cleanup. The data gathering stops either when the `deadman` timer fires or when the DTrace device is closed. The buffers are freed when the device closes. The DTrace device closes either when the consumer calls the `dtrace_close()` function or when the consumer exits. It is best practice for the consumer to call the `dtrace_stop()` function.
+    /// * `handler` - The handler function to be called for each buffered trace record.
+    /// * `arg` - An optional argument to be passed to the handler function. This argument can maintain any state between successive invocations of the handler function.
     ///
+    ///     The handler function must have the following signature:
+    ///     ```rs
+    ///     unsafe extern "C" fn(*const dtrace_bufdata_t, *mut c_void) -> c_int
+    ///     ```
     /// # Returns
     ///
-    /// * `Ok(())` - If the stop operation is successful.
-    /// * `Err(String)` - If the stop operation fails. The error message is returned.
-    pub fn dtrace_stop(&self) -> Result<(), DtraceError> {
-        let status;
+    /// Returns `Ok(())` if the handler was set successfully, or an error code if the handler could
+    /// not be set.
+    pub fn dtrace_handle_buffered(
+        &self,
+        handler: crate::dtrace_handle_buffered_f,
+        arg: Option<&mut ::core::ffi::c_void>,
+    ) -> Result<(), DtraceError> {
+        let status: i32;
+        let arg = match arg {
+            Some(arg) => arg,
+            None => std::ptr::null_mut(),
+        };
         unsafe {
-            status = crate::dtrace_stop(self.handle);
+            status = crate::dtrace_handle_buffered(self.handle, handler, arg);
         }
                 if status == 0 {
             Ok(())
@@ -391,6 +434,9 @@ impl dtrace_hdl {
         }
     }
 
+    /* Handler APIs END */
+
+    /* Aggregation APIs START */
     /// Retrieves aggregation data from the kernel
     ///
     /// This function is called to transfer data from the in-kernel aggregation buffers to the userspace (consumer). The data is not processed at this point.
@@ -492,38 +538,7 @@ impl dtrace_hdl {
         }
     }
 
-    /// Retrieves the error message associated with the specified error number.
-    ///
-    /// # Arguments
-    ///
-    /// * `handle` - An optional handle to a DTrace instance. If `None`, the error message will be
-    ///              retrieved for the global DTrace instance.
-    /// * `errno` - The error number.
-    ///
-    /// # Returns
-    ///
-    /// Returns the error message as a [`String`].
-    pub fn dtrace_errmsg(handle: Option<Self>, errno: i32) -> String {
-        unsafe {
-            let handle = match handle {
-                Some(handle) => handle.handle,
-                None => std::ptr::null_mut(),
-            };
-            let msg = crate::dtrace_errmsg(handle, errno);
-            let msg = ::core::ffi::CStr::from_ptr(msg);
-            let msg = msg.to_str().unwrap();
-            msg.to_string()
-        }
-    }
-
-    /// Retrieves the current error number for the DTrace instance.
-    ///
-    /// # Returns
-    ///
-    /// Returns the current error number.
-    pub fn dtrace_errno(&self) -> i32 {
-        unsafe { crate::dtrace_errno(self.handle) }
-    }
+    /* Aggregation APIs END */
 }
 
 impl Drop for dtrace_hdl {
