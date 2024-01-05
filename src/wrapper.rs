@@ -6,6 +6,12 @@ pub struct dtrace_hdl {
     handle: *mut crate::dtrace_hdl_t,
 }
 
+impl From<*mut crate::dtrace_hdl_t> for dtrace_hdl {
+    fn from(value: *mut crate::dtrace_hdl_t) -> Self {
+        Self { handle: value }
+    }
+}
+
 pub enum dtrace_aggwalk_order {
     /// No sorting, use the default order
     None,
@@ -79,7 +85,7 @@ impl dtrace_hdl {
             handle = crate::dtrace_open(version, flags, &mut errp);
         }
         if !handle.is_null() {
-            Ok(Self { handle })
+            Ok(handle.into())
         } else {
             Err(DtraceError::from(errp))
         }
