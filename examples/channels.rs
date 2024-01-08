@@ -14,8 +14,7 @@ pub unsafe extern "C" fn buffered(
     bufdata: *const crate::dtrace_bufdata_t,
     arg: *mut ::core::ffi::c_void,
 ) -> ::core::ffi::c_int {
-    let tx = arg as *mut ::std::sync::mpsc::Sender<::std::string::String>;
-    let tx = &mut *tx;
+    let tx = &mut *(arg as *mut ::std::sync::mpsc::Sender<::std::string::String>);
     let msg = ::core::ffi::CStr::from_ptr((*bufdata).dtbda_buffered)
         .to_str()
         .expect("Failed to convert buffer to string");
