@@ -394,7 +394,7 @@ impl dtrace_hdl {
     pub fn dtrace_handle_buffered(
         &self,
         handler: crate::dtrace_handle_buffered_f,
-        arg: Option<&mut ::core::ffi::c_void>,
+        arg: Option<*mut ::core::ffi::c_void>,
     ) -> Result<(), DtraceError> {
         let arg = match arg {
             Some(arg) => arg,
