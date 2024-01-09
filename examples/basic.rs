@@ -5,7 +5,7 @@ fn main() {
     handle.dtrace_setopt("bufsize", "4m").unwrap();
     handle.dtrace_setopt("aggsize", "4m").unwrap();
     handle
-        .dtrace_handle_buffered(Some(callbacks::buffered), None)
+        .dtrace_register_handler(crate::types::dtrace_handler::Buffered(Some(callbacks::buffered)), None)
         .unwrap();
     let prog = handle
         .dtrace_program_strcompile(

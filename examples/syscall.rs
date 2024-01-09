@@ -29,7 +29,7 @@ fn main() {
     let handle = wrapper::dtrace_hdl::dtrace_open(libdtrace_rs::DTRACE_VERSION as i32, 0).unwrap();
     handle.dtrace_setopt("bufsize", "4m").unwrap();
     handle
-        .dtrace_handle_buffered(Some(callbacks::buffered), None)
+        .dtrace_register_handler(crate::types::dtrace_handler::Buffered(Some(callbacks::buffered)), None)
         .unwrap();
     let prog = handle
         .dtrace_program_strcompile(

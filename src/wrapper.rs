@@ -375,35 +375,74 @@ impl dtrace_hdl {
     /* Data Consumption APIs END */
 
     /* Handler APIs START */
-    /// Sets a handler function for processing buffered trace data.
-    ///
-    /// If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
+    /// Sets a handler functions for processing trace data.
+    /// 
     /// # Arguments
-    ///
-    /// * `handler` - The handler function to be called for each buffered trace record.
+    /// 
+    /// * `handler` - An enum variant from [`dtrace_handler`] representing the handler function to be called for each trace record. Possible values:
+    ///     * `Buffered(handler)` - The handler function to be called for each buffered trace record.
+    ///         * If [`None`] is passed to `dtrace_work`, `dtrace_consume` or `dtrace_aggregate_print` function, then libdtrace makes use of the buffered I/O handler to process buffered trace data.
+    ///         * The handler function must have the following signature:
+    ///             ```rs
+    ///                 unsafe extern "C" fn(*const dtrace_bufdata_t, *mut c_void) -> c_int
+    ///             ```
+    ///     * `Drop(handler)` - The handler function to be called for each dropped trace record.
+    ///         * The handler function must have the following signature:
+    ///             ```rs
+    ///                 unsafe extern "C" fn(*const dtrace_dropdata_t, *mut c_void) -> c_int
+    ///             ```
+    ///     * `Err(handler)` - To register a handler function for processing errors such as accessing an invalid address or dividing by zero.
+    ///         * The handler function must have the following signature:
+    ///             ```rs
+    ///                 unsafe extern "C" fn(*const dtrace_errdata_t, *mut c_void) -> c_int
+    ///             ```
+    ///     * `SetOpt(handler)` - This handler is called whenever a DTrace option is set from inside a D program.
+    ///         * The handler function must have the following signature:
+    ///             ```rs
+    ///                 unsafe extern "C" fn(*const dtrace_setoptdata_t, *mut c_void) -> c_int
+    ///             ```
+    ///     * `Proc(handler)` - Unsupported.
     /// * `arg` - An optional argument to be passed to the handler function. This argument can maintain any state between successive invocations of the handler function.
-    ///
-    ///     The handler function must have the following signature:
-    ///     ```rs
-    ///     unsafe extern "C" fn(*const dtrace_bufdata_t, *mut c_void) -> c_int
-    ///     ```
+    /// 
     /// # Returns
-    ///
+    /// 
     /// Returns `Ok(())` if the handler was set successfully, or an error code if the handler could
     /// not be set.
-    pub fn dtrace_handle_buffered(
+    pub fn dtrace_register_handler(
         &self,
-        handler: crate::dtrace_handle_buffered_f,
+        handler: crate::types::dtrace_handler,
         arg: Option<*mut ::core::ffi::c_void>,
     ) -> Result<(), DtraceError> {
+        let status;
         let arg = match arg {
             Some(arg) => arg,
             None => std::ptr::null_mut(),
         };
 
-        match unsafe { crate::dtrace_handle_buffered(self.handle, handler, arg) } {
-            0 => Ok(()),
-            _ => Err(DtraceError::from(self.dtrace_errno())),
+        unsafe {
+            status = match handler {
+                crate::types::dtrace_handler::Buffered(handler) => {
+                    crate::dtrace_handle_buffered(self.handle, handler, arg)
+                }
+                crate::types::dtrace_handler::Drop(handler) => {
+                    crate::dtrace_handle_drop(self.handle, handler, arg)
+                }
+                crate::types::dtrace_handler::Err(handler) => {
+                    crate::dtrace_handle_err(self.handle, handler, arg)
+                }
+                crate::types::dtrace_handler::SetOpt(handler) => {
+                    crate::dtrace_handle_setopt(self.handle, handler, arg)
+                }
+                crate::types::dtrace_handler::Proc(handler) => {
+                    crate::dtrace_handle_proc(self.handle, handler, arg)
+                }
+            };
+        }
+
+        if status == 0 {
+            Ok(())
+        } else {
+            Err(DtraceError::from(self.dtrace_errno()))
         }
     }
 

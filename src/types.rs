@@ -118,3 +118,11 @@ impl<'a> From<*mut crate::dtrace_aggdesc> for dtrace_aggdesc<'a> {
         }
     }
 }
+
+pub enum dtrace_handler {
+    Buffered(crate::dtrace_handle_buffered_f),
+    Drop(crate::dtrace_handle_drop_f),
+    Err(crate::dtrace_handle_err_f),
+    Proc(crate::dtrace_handle_proc_f),
+    SetOpt(crate::dtrace_handle_setopt_f),
+}

@@ -31,7 +31,7 @@ fn main() {
         handle.dtrace_setopt("bufsize", "4m").unwrap();
         handle.dtrace_setopt("aggsize", "4m").unwrap();
         handle
-            .dtrace_handle_buffered(Some(buffered), Some(&tx as *const _ as *mut _))
+            .dtrace_register_handler(crate::types::dtrace_handler::Buffered(Some(callbacks::buffered)), Some(&tx as *const _ as *mut _))
             .unwrap();
         let prog = handle
             .dtrace_program_strcompile(
