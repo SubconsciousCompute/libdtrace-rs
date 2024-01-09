@@ -22,11 +22,7 @@ fn main() {
 
     build_dtrace();
     let outdir = std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("dtrace.dll");
-    std::fs::copy(
-        get_dtrace_libpath().join("dtrace.dll"),
-        outdir,
-    )
-    .expect("Failed to copy dll");
+    std::fs::copy(get_dtrace_libpath().join("dtrace.dll"), outdir).expect("Failed to copy dll");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h") // The input header
@@ -68,7 +64,7 @@ fn build_dtrace() {
         .output()
         .expect("Failed to clone dtrace");
 
-    Command::new("powershell")
+    let _ = Command::new("powershell")
         .args(&[".\\build-dtrace.ps1"])
         .output()
         .expect("failed to get external tools");
