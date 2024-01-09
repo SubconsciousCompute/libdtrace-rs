@@ -9,4 +9,5 @@ name = "libdtrace_rs"
 path = "src/lib.rs"
 
 [build-dependencies]
+anyhow = "1.0.79"
 bindgen = "0.69.1"
