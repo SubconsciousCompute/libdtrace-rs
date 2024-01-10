@@ -219,6 +219,42 @@ impl dtrace_hdl {
         unsafe { Ok(&mut *prog) }
     }
 
+    pub fn dtrace_program_fcompile<'a>(
+        &'a self,
+        file: Option<*mut crate::FILE>,
+        flags: u32,
+        args: Option<Vec<String>>,
+    ) -> Result<&'a mut crate::dtrace_prog, DtraceError> {
+        // Break the arguments into argc and argv
+        let (argc, argv) = match args {
+            None => (0, std::ptr::null()),
+            Some(args) => {
+                let mut argv: Vec<*mut ::core::ffi::c_char> = Vec::new();
+                for arg in args {
+                    let arg = std::ffi::CString::new(arg).unwrap();
+                    argv.push(arg.as_ptr() as *mut ::core::ffi::c_char);
+                }
+                (argv.len() as c_int, argv.as_ptr())
+            }
+        };
+
+        let file = match file {
+            Some(file) => file,
+            None => std::ptr::null_mut(),
+        };
+
+        let prog;
+        unsafe {
+            prog = crate::dtrace_program_fcompile(self.handle, file, flags, argc, argv);
+        }
+
+        if prog.is_null() {
+            return Err(DtraceError::from(self.dtrace_errno()));
+        }
+
+        unsafe { Ok(&mut *prog) }
+    }
+
     /// After the D program is compiled, this function is used to create the object file for the program and download the object file to the kernel.
     /// The object file contains all the information necessary for the DTrace framework in the kernel to execute the D program.
     ///
