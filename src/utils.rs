@@ -1,27 +1,31 @@
-use crate::wrapper::dtrace_hdl;
-
 #[derive(Debug)]
-pub enum DtraceError {
-    Errno(i32),
+pub struct Error {
+    _errno: i32,
+    message: String,
 }
 
-// Get message using dtrace_errmsg
-impl std::fmt::Display for DtraceError {
+impl From<::core::ffi::c_int> for Error {
+    fn from(value: ::core::ffi::c_int) -> Self {
+        let message = crate::wrapper::dtrace_hdl::dtrace_errmsg(None, value).to_string();
+        Self { _errno: value, message }
+    }
+}
+
+impl From<&crate::wrapper::dtrace_hdl> for Error {
+    fn from(handle: &crate::wrapper::dtrace_hdl) -> Self {
+        let errno = handle.dtrace_errno();
+        let message = crate::wrapper::dtrace_hdl::dtrace_errmsg(Some(handle), errno).to_string();
+        Self { _errno: errno, message }
+    }
+}
+
+impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        let errno = match self {
-            DtraceError::Errno(errno) => errno,
-        };
-        write!(f, "{}", dtrace_hdl::dtrace_errmsg(None, *errno))
+        write!(f, "Error: {}", self.message)
     }
 }
 
-impl From<i32> for DtraceError {
-    fn from(errno: i32) -> Self {
-        DtraceError::Errno(errno)
-    }
-}
-
-impl std::error::Error for DtraceError {}
+impl std::error::Error for Error {}
 
 extern "C" {
     fn fopen(
