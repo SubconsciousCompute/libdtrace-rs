@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use crate::types::{dtrace_aggwalk_order, dtrace_status};
-use crate::utils::DtraceError;
+use crate::utils::{DtraceError, self};
 use ::core::ffi::c_int;
 /// Represents a handle to a DTrace instance.
 pub struct dtrace_hdl {
@@ -221,7 +221,7 @@ impl dtrace_hdl {
 
     pub fn dtrace_program_fcompile<'a>(
         &'a self,
-        file: Option<*mut crate::FILE>,
+        file: Option<&utils::File>,
         flags: u32,
         args: Option<Vec<String>>,
     ) -> Result<&'a mut crate::dtrace_prog, DtraceError> {
@@ -239,7 +239,7 @@ impl dtrace_hdl {
         };
 
         let file = match file {
-            Some(file) => file,
+            Some(file) => file.file,
             None => std::ptr::null_mut(),
         };
 
@@ -347,13 +347,13 @@ impl dtrace_hdl {
     /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
     pub fn dtrace_consume(
         &self,
-        file: Option<*mut crate::FILE>,
+        file: Option<&utils::File>,
         p_hldr: crate::dtrace_consume_probe_f,
         r_hldr: crate::dtrace_consume_rec_f,
         arg: Option<*mut ::core::ffi::c_void>,
     ) -> Result<(), DtraceError> {
         let file = match file {
-            Some(file) => file,
+            Some(file) => file.file,
             None => std::ptr::null_mut(),
         };
         let arg = match arg {
@@ -385,13 +385,13 @@ impl dtrace_hdl {
     /// * `DTRACE_WORKSTATUS_ERROR` - If an error occurs while performing the work.
     pub fn dtrace_work(
         &self,
-        file: Option<*mut crate::FILE>,
+        file: Option<&utils::File>,
         p_hldr: crate::dtrace_consume_probe_f,
         r_hldr: crate::dtrace_consume_rec_f,
         arg: Option<&mut ::core::ffi::c_void>,
     ) -> Result<crate::dtrace_workstatus_t, DtraceError> {
         let file = match file {
-            Some(file) => file,
+            Some(file) => file.file,
             None => std::ptr::null_mut(),
         };
         let arg = match arg {
@@ -515,11 +515,11 @@ impl dtrace_hdl {
     /// * `Err(i32)` - If the processing fails. The error number is returned.
     pub fn dtrace_aggregate_print(
         &self,
-        file: Option<*mut crate::FILE>,
+        file: Option<&utils::File>,
         handler: crate::dtrace_aggregate_walk_f,
     ) -> Result<(), DtraceError> {
         let file = match file {
-            Some(file) => file,
+            Some(file) => file.file,
             None => std::ptr::null_mut(),
         };
 

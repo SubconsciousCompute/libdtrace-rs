@@ -11,18 +11,18 @@ fn main() {
         )
         .unwrap();
 
-    let file = utils::openf("examples/program.d", "r").unwrap();
+    let file = utils::File::new("examples/program.d", "r").unwrap();
     let prog = handle
-        .dtrace_program_fcompile(Some(file), DTRACE_C_ZDEFS, None)
+        .dtrace_program_fcompile(Some(&file), DTRACE_C_ZDEFS, None)
         .unwrap();
     handle.dtrace_program_exec(prog, None).unwrap();
     handle.dtrace_go().unwrap();
 
-    let output = utils::openf("output.txt", "w").unwrap();
+    let output = utils::File::new("output.txt", "w").unwrap();
     match handle.dtrace_status().unwrap() {
         types::dtrace_status::Ok => {
             handle
-                .dtrace_consume(Some(output), Some(callbacks::chew), Some(callbacks::chew_rec), None)
+                .dtrace_consume(Some(&output), Some(callbacks::chew), Some(callbacks::chew_rec), None)
                 .unwrap();
         }
         _ => {}

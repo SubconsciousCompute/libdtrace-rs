@@ -24,19 +24,35 @@ impl From<i32> for DtraceError {
 impl std::error::Error for DtraceError {}
 
 extern "C" {
-    pub fn fopen(
+    fn fopen(
         __filename: *const ::core::ffi::c_char,
         __modes: *const ::core::ffi::c_char,
     ) -> *mut crate::FILE;
+
+    fn fclose(__stream: *mut crate::FILE) -> ::core::ffi::c_int;
 }
 
-pub fn openf(filename: &str, modes: &str) -> Result<*mut crate::FILE, String> {
-    let filename = std::ffi::CString::new(filename).unwrap();
-    let modes = std::ffi::CString::new(modes).unwrap();
-    let file = unsafe { fopen(filename.as_ptr(), modes.as_ptr()) };
-    if file.is_null() {
-        Err("Failed to open file".to_string())
-    } else {
-        Ok(file)
+pub struct File {
+    pub file: *mut crate::FILE,
+}
+
+impl Drop for File {
+    fn drop(&mut self) {
+        unsafe {
+            fclose(self.file);
+        }
+    }
+}
+
+impl File {
+    pub fn new(filename: &str, modes: &str) -> Result<Self, String> {
+        let filename = std::ffi::CString::new(filename).unwrap();
+        let modes = std::ffi::CString::new(modes).unwrap();
+        let file = unsafe { fopen(filename.as_ptr(), modes.as_ptr()) };
+        if file.is_null() {
+            Err("Failed to open file".to_string())
+        } else {
+            Ok(Self { file})
+        }
     }
 }
