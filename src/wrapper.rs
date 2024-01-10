@@ -347,14 +347,13 @@ impl dtrace_hdl {
     /// * `Err(errno)` - If the consumption fails. The error number (`errno`) is returned.
     pub fn dtrace_consume(
         &self,
-        file: Option<std::fs::File>,
+        file: Option<*mut crate::FILE>,
         p_hldr: crate::dtrace_consume_probe_f,
         r_hldr: crate::dtrace_consume_rec_f,
         arg: Option<*mut ::core::ffi::c_void>,
     ) -> Result<(), DtraceError> {
-        use std::os::windows::io::AsRawHandle;
-        let fp = match file {
-            Some(file) => file.as_raw_handle(),
+        let file = match file {
+            Some(file) => file,
             None => std::ptr::null_mut(),
         };
         let arg = match arg {
@@ -362,7 +361,7 @@ impl dtrace_hdl {
             None => std::ptr::null_mut(),
         };
 
-        match unsafe { crate::dtrace_consume(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg) } {
+        match unsafe { crate::dtrace_consume(self.handle, file, p_hldr, r_hldr, arg) } {
             0 => Ok(()),
             _ => Err(DtraceError::from(self.dtrace_errno())),
         }
@@ -386,21 +385,20 @@ impl dtrace_hdl {
     /// * `DTRACE_WORKSTATUS_ERROR` - If an error occurs while performing the work.
     pub fn dtrace_work(
         &self,
-        file: Option<std::fs::File>,
+        file: Option<*mut crate::FILE>,
         p_hldr: crate::dtrace_consume_probe_f,
         r_hldr: crate::dtrace_consume_rec_f,
         arg: Option<&mut ::core::ffi::c_void>,
     ) -> Result<crate::dtrace_workstatus_t, DtraceError> {
-        use std::os::windows::io::AsRawHandle;
-        let fp = match file {
-            Some(file) => file.as_raw_handle(),
+        let file = match file {
+            Some(file) => file,
             None => std::ptr::null_mut(),
         };
         let arg = match arg {
             Some(arg) => arg,
             None => std::ptr::null_mut(),
         };
-        match unsafe { crate::dtrace_work(self.handle, fp as *mut crate::FILE, p_hldr, r_hldr, arg) } {
+        match unsafe { crate::dtrace_work(self.handle, file, p_hldr, r_hldr, arg) } {
             crate::dtrace_workstatus_t::DTRACE_WORKSTATUS_ERROR => {
                 Err(DtraceError::from(self.dtrace_errno()))
             }
@@ -517,16 +515,15 @@ impl dtrace_hdl {
     /// * `Err(i32)` - If the processing fails. The error number is returned.
     pub fn dtrace_aggregate_print(
         &self,
-        file: Option<std::fs::File>,
+        file: Option<*mut crate::FILE>,
         handler: crate::dtrace_aggregate_walk_f,
     ) -> Result<(), DtraceError> {
-        use std::os::windows::io::AsRawHandle;
-        let fp = match file {
-            Some(file) => file.as_raw_handle(),
+        let file = match file {
+            Some(file) => file,
             None => std::ptr::null_mut(),
         };
 
-        match unsafe { crate::dtrace_aggregate_print(self.handle, fp as *mut crate::FILE, handler) }
+        match unsafe { crate::dtrace_aggregate_print(self.handle, file, handler) }
         {
             0 => Ok(()),
             _ => Err(DtraceError::from(self.dtrace_errno())),
