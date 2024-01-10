@@ -1,0 +1,4 @@
+BEGIN
+{
+    trace("Hello World");
+}
