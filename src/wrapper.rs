@@ -154,6 +154,24 @@ impl dtrace_hdl {
         }
     }
 
+    /// Retrieves the value of the specified DTrace option.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `option` - The name of the option to retrieve.
+    /// 
+    /// # Returns
+    /// 
+    /// Returns the value of the option if successful, or an error code if the option could not be retrieved.
+    pub fn dtrace_getopt(&self, option: &str) -> Result<crate::dtrace_optval_t, Error> {
+        let option = std::ffi::CString::new(option).unwrap();
+        let mut optval: crate::dtrace_optval_t = 0;
+        match unsafe { crate::dtrace_getopt(self.handle, option.as_ptr(), &mut optval) } {
+            0 => Ok(optval),
+            _ => Err(Error::from(self)),
+        }
+    }
+
     /* General Purpose APIs END */
 
     /* Programming APIs START */
