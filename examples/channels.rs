@@ -14,7 +14,7 @@ pub unsafe extern "C" fn buffered(
     bufdata: *const crate::dtrace_bufdata_t,
     arg: *mut ::core::ffi::c_void,
 ) -> ::core::ffi::c_int {
-    let tx = & *(arg as *mut ::std::sync::mpsc::Sender<::std::string::String>);
+    let tx = &*(arg as *mut ::std::sync::mpsc::Sender<::std::string::String>);
     let msg = ::core::ffi::CStr::from_ptr((*bufdata).dtbda_buffered)
         .to_str()
         .expect("Failed to convert buffer to string");
@@ -26,13 +26,14 @@ pub unsafe extern "C" fn buffered(
 fn main() {
     let (tx, rx): (Sender<String>, Receiver<String>) = mpsc::channel();
 
-    thread::spawn(move || {
-        let handle = wrapper::dtrace_hdl::dtrace_open(libdtrace_rs::DTRACE_VERSION as i32, 0).unwrap();
-        handle.dtrace_setopt("bufsize", "4m").unwrap();
-        handle.dtrace_setopt("aggsize", "4m").unwrap();
-        handle
-            .dtrace_register_handler(crate::types::dtrace_handler::Buffered(Some(buffered)), Some(&tx as *const _ as *mut _))
-            .unwrap();
+    thread::spawn(move || -> Result<(), utils::Error> {
+        let handle = wrapper::dtrace_hdl::dtrace_open(libdtrace_rs::DTRACE_VERSION as i32, 0)?
+            .dtrace_setopt("bufsize", "4m")?
+            .dtrace_setopt("aggsize", "4m")?
+            .dtrace_register_handler(
+                crate::types::dtrace_handler::Buffered(Some(buffered)),
+                Some(&tx as *const _ as *mut _),
+            )?;
         let prog = handle
             .dtrace_program_strcompile(
                 PROGRAM,
@@ -51,6 +52,8 @@ fn main() {
                 .unwrap_or(dtrace_workstatus_t::DTRACE_WORKSTATUS_OKAY);
         }
         handle.dtrace_stop().unwrap();
+
+        Ok(())
     });
 
     loop {

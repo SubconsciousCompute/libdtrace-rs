@@ -1,12 +1,13 @@
 use libdtrace_rs::*;
 
-fn main() {
-    let handle = wrapper::dtrace_hdl::dtrace_open(libdtrace_rs::DTRACE_VERSION as i32, 0).unwrap();
-    handle.dtrace_setopt("bufsize", "4m").unwrap();
-    handle.dtrace_setopt("aggsize", "4m").unwrap();
-    handle
-        .dtrace_register_handler(crate::types::dtrace_handler::Buffered(Some(callbacks::buffered)), None)
-        .unwrap();
+fn main() -> Result<(), utils::Error> {
+    let handle = wrapper::dtrace_hdl::dtrace_open(libdtrace_rs::DTRACE_VERSION as i32, 0)?
+        .dtrace_setopt("bufsize", "4m")?
+        .dtrace_setopt("aggsize", "4m")?
+        .dtrace_register_handler(
+            crate::types::dtrace_handler::Buffered(Some(callbacks::buffered)),
+            None,
+        )?;
     let prog = handle
         .dtrace_program_strcompile(
             "BEGIN {trace(\"Hello World\");}",
@@ -21,16 +22,14 @@ fn main() {
     match handle.dtrace_status().unwrap() {
         types::dtrace_status::Ok => {
             handle
-                .dtrace_consume(
-                    None, 
-                    Some(callbacks::chew), 
-                    Some(callbacks::chew_rec), 
-                    None
-                ).unwrap();
+                .dtrace_consume(None, Some(callbacks::chew), Some(callbacks::chew_rec), None)
+                .unwrap();
         }
         _ => {}
     }
 
     handle.dtrace_aggregate_print(None, None).unwrap();
     handle.dtrace_stop().unwrap();
+
+    Ok(())
 }
