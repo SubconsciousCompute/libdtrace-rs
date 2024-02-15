@@ -2,11 +2,15 @@ use std::env;
 use std::path::PathBuf;
 use std::process::Command;
 
+const DTRACE_SRC_DIR: &str = "_dtrace";
+
 // Set-ExecutionPolicy RemoteSigned –Scope Process
 // 'C:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Current\Bin\MSBuild.exe' opendtrace.sln /t:dtrace_dll:Rebuild /p:Configuration=Release /p:Platform=x64
 fn get_dtrace_libpath() -> PathBuf {
     let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
-    std::path::Path::new(&dir).join("target\\dtrace\\build\\x64\\Release\\lib\\")
+    std::path::Path::new(&dir)
+        .join(DTRACE_SRC_DIR)
+        .join("dtrace/build/x64/Release/lib")
 }
 
 fn main() {
@@ -20,13 +24,12 @@ fn main() {
         get_dtrace_libpath().display()
     );
 
-    build_dtrace();
+    print!("Trying to buidld dtrace library... ");
+    build_dtrace().unwrap();
+    println!("\t....[DONE]");
+
     let outdir = std::path::Path::new(&env::var("OUT_DIR").unwrap()).join("dtrace.dll");
-    std::fs::copy(
-        get_dtrace_libpath().join("dtrace.dll"),
-        outdir,
-    )
-    .expect("Failed to copy dll");
+    std::fs::copy(get_dtrace_libpath().join("dtrace.dll"), outdir).expect("Failed to copy dll");
 
     let bindings = bindgen::Builder::default()
         .header("wrapper.h") // The input header
@@ -58,18 +61,33 @@ fn main() {
         .expect("Couldn't write bindings!");
 }
 
-fn build_dtrace() {
-    Command::new("git")
-        .args(&[
-            "clone",
-            "https://github.com/microsoft/DTrace-on-Windows.git",
-            "target\\dtrace",
-        ])
-        .output()
-        .expect("Failed to clone dtrace");
+fn build_dtrace() -> anyhow::Result<()> {
+    let output = if !PathBuf::from(DTRACE_SRC_DIR).is_dir() {
+        Command::new("git")
+            .args(&[
+                "clone",
+                "https://github.com/microsoft/DTrace-on-Windows.git",
+                DTRACE_SRC_DIR,
+            ])
+            .output()
+            .expect("Failed to clone dtrace");
+    } else {
+        Command::new("git")
+            .arg("udpate")
+            .current_dir(DTRACE_SRC_DIR)
+            .output()
+            .expect("Failed to update dtrace");
+    };
 
-    Command::new("powershell")
-        .args(&[".\\build-dtrace.ps1"])
+    println!("> git update/clone {output:?}");
+
+    let output = Command::new("powershell.exe")
+        .arg("-F")
+        .arg("./build-dtrace.ps1")
         .output()
         .expect("failed to get external tools");
+
+    println!("> git clone {output:?}");
+
+    Ok(())
 }
