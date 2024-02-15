@@ -145,12 +145,12 @@ impl dtrace_hdl {
     ///
     /// Returns `Ok(())` if the option was set successfully, or an error code if the option could
     /// not be set.
-    pub fn dtrace_setopt(&self, option: &str, value: &str) -> Result<(), Error> {
+    pub fn dtrace_setopt(self, option: &str, value: &str) -> Result<Self, Error> {
         let option = std::ffi::CString::new(option).unwrap();
         let value = std::ffi::CString::new(value).unwrap();
         match unsafe { crate::dtrace_setopt(self.handle, option.as_ptr(), value.as_ptr()) } {
-            0 => Ok(()),
-            _ => Err(Error::from(self)),
+            0 => Ok(self),
+            _ => Err(Error::from(&self)),
         }
     }
 
@@ -461,10 +461,10 @@ impl dtrace_hdl {
     /// Returns `Ok(())` if the handler was set successfully, or an error code if the handler could
     /// not be set.
     pub fn dtrace_register_handler(
-        &self,
+        self,
         handler: crate::types::dtrace_handler,
         arg: Option<*mut ::core::ffi::c_void>,
-    ) -> Result<(), Error> {
+    ) -> Result<Self, Error> {
         let status;
         let arg = match arg {
             Some(arg) => arg,
@@ -492,9 +492,9 @@ impl dtrace_hdl {
         }
 
         if status == 0 {
-            Ok(())
+            Ok(self)
         } else {
-            Err(Error::from(self))
+            Err(Error::from(&self))
         }
     }
 
